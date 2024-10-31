@@ -1,0 +1,16 @@
+Data/final_dataset6.csv
+Data/*
+Code/Experiments/Esco_Extractor/*.xlsx
+Code/Experiments/Esco_Extractor/*.xls
+.ipynb_checkpoints/
+__pycache__/
+.ipynb_checkpoints/*
+.__pycache__/*
+*.ipynb
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+.cache/
+.cache/
