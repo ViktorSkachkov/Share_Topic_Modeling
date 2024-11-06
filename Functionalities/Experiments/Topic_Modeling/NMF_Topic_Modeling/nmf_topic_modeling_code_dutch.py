@@ -27,11 +27,11 @@ if not data_folder:
 print(f"Data folder found: {data_folder}")
 
 timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-output_subfolder = os.path.join(data_folder, f'nmf_topics_data_100epochs_{timestamp}')
+output_subfolder = os.path.join(data_folder, f'nmf_topics_data_1000e_10w_50t_dutch_{timestamp}')
 os.makedirs(output_subfolder, exist_ok=True)
 print(f"Output subfolder created: {output_subfolder}")
 
-input_file = os.path.join(data_folder, 'english_job_postings.csv')
+input_file = os.path.join(data_folder, 'dutch_job_postings.csv')
 if not os.path.isfile(input_file):
     raise FileNotFoundError(f"Input file '{input_file}' does not exist.")
 print(f"Input File: {input_file}")
@@ -78,16 +78,16 @@ for stop_words_file in [stop_words_english, stop_words_dutch, stop_words_custom]
         raise FileNotFoundError(f"Stop words file '{stop_words_file}' does not exist.")
 print(f"Stop Words files found: English, Dutch, and Custom")
 
-output_file = os.path.join(output_subfolder, f'nmf_topics_100epochs_{timestamp}.txt')
+output_file = os.path.join(output_subfolder, f'nmf_topics_1000e_10w_50t_dutch_{timestamp}.txt')
 print(f"Output File: {output_file}")
 
 # Create a file to save metrics
-metrics_file = os.path.join(output_subfolder, f'nmf_metrics_100epochs_{timestamp}.txt')
+metrics_file = os.path.join(output_subfolder, f'nmf_metrics_1000e_10w_50t_dutch_{timestamp}.txt')
 print(f"Metrics File: {metrics_file}")
 
-epochs = 100
-num_top_words = 15
-num_topics = 30
+epochs = 1000
+num_top_words = 10
+num_topics = 50
 
 topic_modeling_initializer(input_file, metrics_file, output_subfolder, stop_words_english, stop_words_dutch, stop_words_custom, model_file, epochs, num_top_words, num_topics)
 print("Process completed.")

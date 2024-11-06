@@ -2,12 +2,12 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from sklearn.decomposition import NMF
-from sklearn.metrics import pairwise_distances, silhouette_score, classification_report
+from sklearn.metrics import silhouette_score
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics.pairwise import cosine_similarity
 import os
+import numpy as np
 
 # Ensure NLTK stopwords are downloaded
 nltk.download('punkt')
@@ -55,56 +55,65 @@ class NMFModel:
         self.doc_term_matrix = doc_term_matrix
         self.topic_matrix = self.model.fit_transform(doc_term_matrix)
 
-    def evaluate(self):
-        # Use score() for log-likelihood and perplexity() for perplexity
-        coherence_score = self.model.score(self.doc_term_matrix)  # This is the log-likelihood
-        perplexity_score = self.model.perplexity(self.doc_term_matrix)
-        return coherence_score, perplexity_score
-
-    def topic_diversity(self):
-        topics = self.display_topics()
-        unique_words = set(word for topic in topics for word in topic)
-        return len(unique_words) / (self.num_topics * self.num_top_words)  # Normalized diversity score
-
-    def hierarchy_quality(self):
-        topic_word_matrix = self.model.components_
-        distances = pairwise_distances(topic_word_matrix)
-        return distances
-
-    def clustering(self, n_clusters=5):
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-        kmeans.fit(self.doc_term_matrix)
-        silhouette_avg = silhouette_score(self.doc_term_matrix, kmeans.labels_)
-        return silhouette_avg
-
-    def classification(self, labels):
-        if len(labels) != len(self.data):
-            raise ValueError("Number of labels must match number of documents.")
-        
-        X_train, X_test, y_train, y_test = train_test_split(self.doc_term_matrix, labels, test_size=0.2, random_state=42)
-        classifier = MultinomialNB(max_iter=1000)
-        classifier.fit(X_train, y_train)
-        y_pred = classifier.predict(X_test)
-        report = classification_report(y_test, y_pred)
-        return report
-
     def display_topics(self):
+        # Save topics to a file
         feature_names = self.vectorizer.get_feature_names_out()
         topics = []
         for idx, topic in enumerate(self.model.components_):
             topics.append([feature_names[i] for i in topic.argsort()[-self.num_top_words:]])
-        return topics
-
-    def save_topics(self, output_subfolder):
-        # Ensure the output subfolder exists
-        os.makedirs(output_subfolder, exist_ok=True)  # Create the directory if it doesn't exist
         
-        topics = self.display_topics()
-        file_path = os.path.join(output_subfolder, 'topics.txt')  # Save in the specified folder
-
+        file_path = os.path.join(self.output_subfolder, 'topics.txt')
         with open(file_path, 'w') as f:
             for i, topic in enumerate(topics, 1):
                 f.write(f"Topic {i}:\n")
                 f.write(", ".join(topic) + "\n\n")
         
         print(f"Topics saved to {file_path}")
+        return topics
+
+    def calculate_topic_coherence(self):
+        # Simple coherence metric based on word similarity within topics
+        coherence_scores = []
+        for topic_idx, topic in enumerate(self.model.components_):
+            top_words_idx = topic.argsort()[-self.num_top_words:]
+            pairwise_distances = [
+                np.linalg.norm(self.model.components_[:, top_words_idx[i]] - self.model.components_[:, top_words_idx[j]])
+                for i in range(len(top_words_idx)) for j in range(i + 1, len(top_words_idx))
+            ]
+            coherence_scores.append(np.mean(pairwise_distances))
+
+        coherence_score = np.mean(coherence_scores)
+        return coherence_score
+
+    def calculate_topic_diversity(self):
+        topics = self.display_topics()
+        unique_words = set(word for topic in topics for word in topic)
+        topic_diversity = len(unique_words) / (self.n_topics * self.num_top_words)
+        return topic_diversity
+
+    def calculate_silhouette_score(self):
+        # Clustering quality evaluation
+        kmeans = KMeans(n_clusters=self.n_topics, random_state=42)
+        labels = kmeans.fit_predict(self.topic_matrix)
+        score = silhouette_score(self.topic_matrix, labels)
+        return score
+
+    def evaluate_clustering_stability(self, num_runs=5):
+        # Measure clustering stability across multiple runs
+        stability_scores = []
+        for _ in range(num_runs):
+            model = NMF(n_components=self.n_topics, random_state=None, max_iter=self.epochs)
+            topic_matrix = model.fit_transform(self.doc_term_matrix)
+            kmeans = KMeans(n_clusters=self.n_topics, random_state=42)
+            labels = kmeans.fit_predict(topic_matrix)
+            score = silhouette_score(topic_matrix, labels)
+            stability_scores.append(score)
+
+        avg_stability_score = np.mean(stability_scores)
+        return avg_stability_score
+    
+    def calculate_cosine_similarity(self):
+        """Calculate the cosine similarity between topics."""
+        # Calculate cosine similarity between topic components
+        cosine_sim = cosine_similarity(self.model.components_)
+        return cosine_sim
