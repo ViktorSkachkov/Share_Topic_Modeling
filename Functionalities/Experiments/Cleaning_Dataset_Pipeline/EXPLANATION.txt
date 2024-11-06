@@ -1,3 +1,0 @@
-'cleaning_dataset_pipeline_code2.py' contains methods like removing obfuscated words and removing duplicated rows and rows with invalid data which are not contained in 'cleaning_dataset_pipeline_code1.py'.
-
-'cleaning_dataset_pipeline_code3.py' contains methods like replacing certain words which could cause problems for the cosine-similarity matrix as well as lowercasing all the words in the dataset.
